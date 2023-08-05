@@ -12,6 +12,7 @@
 #include "EnhancedInputSubsystems.h"
 #include "SGameModeBase.h"
 #include "NavigationSystem.h"
+#include "SPickableUp.h"
 #include "Components/WidgetInteractionComponent.h"
 #include "Kismet/KismetMathLibrary.h"
 
@@ -49,6 +50,20 @@ ASVrPawn::ASVrPawn()
     WidgetInteraction->InteractionDistance = 0.0f;
 }
 
+void ASVrPawn::Hold(AActor* ObjectForHolding, USceneComponent* HoldingComponent)
+{
+    HoldedObject = ObjectForHolding;
+    HolderSide = HoldingComponent == StaticMeshComponentLeft ? ESPointerSourceSide::Left : ESPointerSourceSide::Right;
+    bDoesHold = true;
+}
+
+void ASVrPawn::ThrowOut()
+{
+    HoldedObject = nullptr;
+    HolderSide = ESPointerSourceSide::NONE;
+    bDoesHold = false;
+}
+
 void ASVrPawn::BeginPlay()
 {
     Super::BeginPlay();
@@ -76,7 +91,6 @@ void ASVrPawn::BeginPlay()
     auto GameMode = GetWorld() ? Cast<ASGameModeBase>(GetWorld()->GetAuthGameMode()) : nullptr;
     if (GameMode)
     {
-        UE_LOG(LogSVrPawn, Display, TEXT("Subscrybe on gamemode"));
         GameMode->OnGameStateChanged.AddUObject(this, &ASVrPawn::OnMatchStateChanged);
     }
 }
@@ -111,6 +125,12 @@ void ASVrPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
             &ASVrPawn::InputData, ESPointerSourceSide::Right);
         PlayerEnhancedInputComponent->BindAction(TriggerClickOnLeft, ETriggerEvent::Started, this,
             &ASVrPawn::InputData, ESPointerSourceSide::Left);
+
+        //Interaction with world:
+        PlayerEnhancedInputComponent->BindAction(GrabClickOnRight, ETriggerEvent::Started, this,
+            &ASVrPawn::TryToInteractWithWorld, ESPointerSourceSide::Right);
+        PlayerEnhancedInputComponent->BindAction(GrabClickOnLeft, ETriggerEvent::Started, this,
+            &ASVrPawn::TryToInteractWithWorld, ESPointerSourceSide::Left);
     }
 }
 
@@ -128,23 +148,26 @@ void ASVrPawn::TurnPlayer(const FInputActionValue& Value)
 
 void ASVrPawn::SnapTurn(bool IsRightTurn, float Degrees)
 {
-    auto Delta = IsRightTurn ? FRotator(0.0f, Degrees, 0.0f) : FRotator(0.0f, -1 * Degrees, 0.0f);
+    const auto Delta = IsRightTurn ? FRotator(0.0f, Degrees, 0.0f) : FRotator(0.0f, -1 * Degrees, 0.0f);
     AddActorWorldRotation(Delta);
 }
 
 void ASVrPawn::ActivatePointer(const ESPointerSourceSide MotionControllerSourceSide)
 {
-    if (!bIsPointerActive)
+    if (bIsPointerActive)
+        return;
+    if (bDoesHold && MotionControllerSourceSide == HolderSide)
+        return;
+
+    if (MotionControllerSourceSide == ESPointerSourceSide::Right)
     {
-        if (MotionControllerSourceSide == ESPointerSourceSide::Right)
-        {
-            AttachPointerToController(ESPointerSourceSide::Right, StaticMeshComponentRight);
-        }
-        else if (MotionControllerSourceSide == ESPointerSourceSide::Left)
-        {
-            AttachPointerToController(ESPointerSourceSide::Left, StaticMeshComponentLeft);
-        }
+        AttachPointerToController(ESPointerSourceSide::Right, StaticMeshComponentRight);
     }
+    else if (MotionControllerSourceSide == ESPointerSourceSide::Left)
+    {
+        AttachPointerToController(ESPointerSourceSide::Left, StaticMeshComponentLeft);
+    }
+
 }
 
 void ASVrPawn::AttachPointerToController(ESPointerSourceSide MotionControllerSourceSide, UMeshComponent* ControllerMesh)
@@ -165,6 +188,52 @@ void ASVrPawn::InputData(const ESPointerSourceSide MotionControllerSourceSide)
     WidgetInteraction->ReleasePointerKey(EKeys::LeftMouseButton);
 }
 
+void ASVrPawn::TryToInteractWithWorld(const ESPointerSourceSide MotionControllerSourceSide)
+{
+    UE_LOG(LogSVrPawn, Display, TEXT("TryToInteractWithWorld 1!"));
+    if (bDoesHold && HolderSide == MotionControllerSourceSide)
+    {
+        UE_LOG(LogSVrPawn, Display, TEXT("We hold 2!"));
+        if (UKismetSystemLibrary::DoesImplementInterface(HoldedObject, USPickableUp::StaticClass()))
+        {
+            if (ISPickableUp* ActorForPicking = Cast<ISPickableUp>(HoldedObject))
+            {
+                
+                    UE_LOG(LogSVrPawn, Display, TEXT("Try to call drop on %s!"), *HoldedObject->GetName());
+
+                    ActorForPicking->Drop();
+                    ThrowOut();
+                
+            }
+        }
+    }
+    else
+    {
+
+        auto MeshForAttaching = MotionControllerSourceSide == ESPointerSourceSide::Left
+                                    ? StaticMeshComponentLeft
+                                    : StaticMeshComponentRight;
+        TArray<AActor*> OverlappingActors;
+        MeshForAttaching->GetOverlappingActors(OverlappingActors, AActor::StaticClass());
+        for (auto OverlappingActor : OverlappingActors)
+        {
+            if (UKismetSystemLibrary::DoesImplementInterface(OverlappingActor, USPickableUp::StaticClass()))
+            {
+                if (ISPickableUp* ActorForPicking = Cast<ISPickableUp>(OverlappingActor))
+                {
+                    
+                        UE_LOG(LogSVrPawn, Display, TEXT("TryToCall pickup!"));
+                        ActorForPicking->PickUp(MeshForAttaching);
+                        Hold(OverlappingActor, MeshForAttaching);
+                        break;
+                    
+
+                }
+            }
+        }
+    }
+}
+
 void ASVrPawn::OnMatchStateChanged(ESGameState GameState)
 {
     if (GameState == ESGameState::InProgress)
@@ -179,7 +248,6 @@ void ASVrPawn::OnMatchStateChanged(ESGameState GameState)
 
 void ASVrPawn::DisablePointer(const ESPointerSourceSide MotionControllerSourceSide)
 {
-    UE_LOG(LogSVrPawn, Display, TEXT("HidePointer!"));
     if (PointerMotionSource == MotionControllerSourceSide)
     {
         TryToTeleportOnNewLocation();
@@ -218,7 +286,7 @@ void ASVrPawn::UpdatePointerTrace()
             //Находим ближайшую точку на навигационном мэше, если она есть...
             bValidLocationForTeleportWasFound = IsValidTeleportLocation(FoundedTeleportLocationOnNavMesh, HitResult.Location);
         }
-        
+
         if (bValidLocationForTeleportWasFound)
         {
             PointerTrace->SetColorParameter(PropertyForColorAdjusting, ValidHitColor);
@@ -256,11 +324,6 @@ bool ASVrPawn::FindPointOnMeshFromNavMesh(FVector LocationOnNavMesh, FHitResult&
         FCollisionQueryParams(),
         FCollisionResponseParams());
 
-    // DrawDebugLine(GetWorld(), LocationOnNavMesh + FVector(
-    //         0.0f, 0.0f, HeightOfVerticalLineFromNavMesh),
-    //     LocationOnNavMesh - FVector(
-    //         0.0f, 0.0f, 2 * HeightOfVerticalLineFromNavMesh), FColor::Magenta, true, 100.0f, 0, 3.0f);
-
     if (WasHitMesh)
     {
         TraceResult = Result;
@@ -274,8 +337,7 @@ void ASVrPawn::TryToTeleportOnNewLocation()
     if (bCanTeleport && bValidLocationForTeleportWasFound && UHeadMountedDisplayFunctionLibrary::GetHMDWornState() == EHMDWornState::Worn)
     {
         FHitResult Result;
-        bool FindPointOnMeshUnderNavMesh = FindPointOnMeshFromNavMesh(FoundedTeleportLocationOnNavMesh, Result);
-        if (FindPointOnMeshUnderNavMesh)
+        if (const bool FindPointOnMeshUnderNavMesh = FindPointOnMeshFromNavMesh(FoundedTeleportLocationOnNavMesh, Result))
         {
             SetActorLocation(Result.Location);
         }
