@@ -4,11 +4,12 @@
 
 #include "CoreMinimal.h"
 #include "UObject/Interface.h"
-#include "SPickableUp.generated.h"
+#include "SStoredInOrder.generated.h"
 
-class ISObjectsHolder;
+class ASTable;
+// This class does not need to be modified.
 UINTERFACE()
-class USPickableUp : public UInterface
+class USStoredInOrder : public UInterface
 {
     GENERATED_BODY()
 };
@@ -16,14 +17,13 @@ class USPickableUp : public UInterface
 /**
  * 
  */
-class SANDBOX_API ISPickableUp
+class SANDBOX_API ISStoredInOrder
 {
     GENERATED_BODY()
 
 public:
     UFUNCTION()
-    virtual void PickUp(UMeshComponent* MeshForAttaching) = 0;
+    virtual FVector GetLocationInWorld() = 0;
     UFUNCTION()
-    virtual void Drop() = 0;
-
+    virtual FName GetNameForOrder() = 0;
 };

@@ -3,9 +3,12 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "SStoredInOrder.h"
 #include "SCoreTypes.generated.h"
 
+class ISStoredInOrder;
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnMatchStateChangedSignature, ESGameState);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnOrderOfObjsChangedSignature, const TArray<TScriptInterface<ISStoredInOrder>>, ArrayOfItemsInRightOrder);
 
 UENUM(BlueprintType)
 enum class ESGameState : uint8

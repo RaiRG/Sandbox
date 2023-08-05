@@ -2,6 +2,8 @@
 
 
 #include "InteractableElements/SMagicItem.h"
+#include "NiagaraComponent.h"
+#include "Kismet/GameplayStatics.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogSMagicItem, All, All);
 
@@ -14,6 +16,8 @@ ASMagicItem::ASMagicItem()
     StaticMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>("StaticMeshComponent");
     StaticMeshComponent->SetupAttachment(GetRootComponent());
 
+    MagicTrackComponent = CreateDefaultSubobject<UNiagaraComponent>("MagicTrackComponent");
+    MagicTrackComponent->SetupAttachment(StaticMeshComponent);
 }
 
 void ASMagicItem::PickUp(UMeshComponent* MeshForAttaching)
@@ -21,10 +25,11 @@ void ASMagicItem::PickUp(UMeshComponent* MeshForAttaching)
     UE_LOG(LogSMagicItem, Display, TEXT("Pickup"));
     if (MeshForAttaching)
     {
-        UE_LOG(LogSMagicItem, Display, TEXT("Actor Location 1 %s"), *GetActorLocation().ToString());
         StaticMeshComponent->SetSimulatePhysics(false);
+        MagicTrackComponent->SetVisibility(true);
         const FAttachmentTransformRules AttachmentRules(EAttachmentRule::SnapToTarget, true);
         StaticMeshComponent->AttachToComponent(MeshForAttaching, AttachmentRules, SocketForAttaching);
+        UGameplayStatics::PlaySoundAtLocation(GetWorld(), PickUpSound, StaticMeshComponent->GetComponentLocation());
         bIsPickedUp = true;
     }
 }
@@ -35,8 +40,18 @@ void ASMagicItem::Drop()
     DetachFromActor(Rules);
     StaticMeshComponent->SetSimulatePhysics(true);
     bIsPickedUp = false;
-    UE_LOG(LogSMagicItem, Display, TEXT("Actor Location 2 %s"), *GetActorLocation().ToString());
+    MagicTrackComponent->SetVisibility(false);
 
+}
+
+FVector ASMagicItem::GetLocationInWorld()
+{
+    return StaticMeshComponent->GetComponentLocation();
+}
+
+FName ASMagicItem::GetNameForOrder()
+{
+    return TestName;
 }
 
 void ASMagicItem::BeginPlay()
@@ -44,4 +59,5 @@ void ASMagicItem::BeginPlay()
     Super::BeginPlay();
     StartStateRelativeTransformOfStaticMesh = StaticMeshComponent->GetRelativeTransform();
     StaticMeshComponent->SetSimulatePhysics(true);
+    MagicTrackComponent->SetVisibility(false);
 }

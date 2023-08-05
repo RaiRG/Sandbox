@@ -21,7 +21,10 @@ class SANDBOX_API ISObjectsHolder
     GENERATED_BODY()
 
 public:
+    UFUNCTION()
     virtual bool GetDoesHold() =0;
+    UFUNCTION()
     virtual void Hold(AActor* ObjectForHolding,  USceneComponent* HoldingComponent) = 0;
+    UFUNCTION()
     virtual void ThrowOut() = 0;
 };

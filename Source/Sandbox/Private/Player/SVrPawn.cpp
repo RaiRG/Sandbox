@@ -198,16 +198,16 @@ void ASVrPawn::TryToInteractWithWorld(const ESPointerSourceSide MotionController
         {
             if (ISPickableUp* ActorForPicking = Cast<ISPickableUp>(HoldedObject))
             {
-                
-                    UE_LOG(LogSVrPawn, Display, TEXT("Try to call drop on %s!"), *HoldedObject->GetName());
 
-                    ActorForPicking->Drop();
-                    ThrowOut();
-                
+                UE_LOG(LogSVrPawn, Display, TEXT("Try to call drop on %s!"), *HoldedObject->GetName());
+
+                ActorForPicking->Drop();
+                ThrowOut();
+
             }
         }
     }
-    else
+    else if (!bDoesHold)
     {
 
         auto MeshForAttaching = MotionControllerSourceSide == ESPointerSourceSide::Left
@@ -221,12 +221,11 @@ void ASVrPawn::TryToInteractWithWorld(const ESPointerSourceSide MotionController
             {
                 if (ISPickableUp* ActorForPicking = Cast<ISPickableUp>(OverlappingActor))
                 {
-                    
-                        UE_LOG(LogSVrPawn, Display, TEXT("TryToCall pickup!"));
-                        ActorForPicking->PickUp(MeshForAttaching);
-                        Hold(OverlappingActor, MeshForAttaching);
-                        break;
-                    
+
+                    UE_LOG(LogSVrPawn, Display, TEXT("TryToCall pickup!"));
+                    ActorForPicking->PickUp(MeshForAttaching);
+                    Hold(OverlappingActor, MeshForAttaching);
+                    break;
 
                 }
             }
