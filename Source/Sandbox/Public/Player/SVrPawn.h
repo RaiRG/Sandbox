@@ -56,11 +56,32 @@ protected:
     FName PointerSocketName = "PointerSocket";
 
     UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="PointerSettings")
-    float PointerMaxDistance = 350.0f;
+    float PointerMaxDistance = 700.0f;
 
-    UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="PoitnerSettings")
-    FString PropertyForDistanceAdjusting = "User.BeamEnd";
+    UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="PointerSettings")
+    FName PropertyForDistanceAdjusting = "User.BeamEnd";
 
+    UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="PointerSettings")
+    FName PropertyForColorAdjusting = "User.PointerColor";
+    
+    UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="PointerSettings | Teleport Info")
+    FLinearColor ValidHitColor = FLinearColor::Green;
+
+    UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="PointerSettings | Teleport Info")
+    FLinearColor InvalidHitColor = FLinearColor::Red;
+
+    UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="PointerSettings | Teleport Info",
+    meta = (ToolTip=
+        "Точность нахождения точки на навигационном мэше. Как далеко в каждом направлении искать точку на нав меше, прежде чем сдаться"
+    ))
+    FVector QueryingExtent = FVector(300.0f, 300.0f, 300.0f);
+
+    UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="TeleportInfo | Settings",
+       meta = (ToolTip=
+           "Задает высоту луча, проведенного перпендикулярно вверх или вниз с точки на навигационном мэше, чтобый найти точку на мэше (например, земле)200"
+       ))
+    float HeightOfVerticalLineFromNavMesh = 1000.0f;
+    
     UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category="Inputs | IMC")
     UInputMappingContext* DefaultMappingContext;
 
@@ -84,17 +105,25 @@ protected:
 
     void TurnPlayer(const FInputActionValue& Value);
     void SnapTurn(bool IsRightTurn, float Degrees);
-    void InputData(const FName MotionControllerSourceSide);
+    void InputData(const ESPointerSourceSide MotionControllerSourceSide);
     
-    void DisablePointer(const FName MotionControllerSourceSide);
-    void ActivatePointer(const FName MotionControllerSourceSide);
-    void AttachPointerToController(FName MotionControllerSourceSide, UMeshComponent* ControllerMesh);
+    void DisablePointer(const ESPointerSourceSide MotionControllerSourceSide);
+    void ActivatePointer(const ESPointerSourceSide MotionControllerSourceSide);
+    void AttachPointerToController(ESPointerSourceSide MotionControllerSourceSide, UMeshComponent* ControllerMesh);
     void UpdatePointerTrace();
+    bool IsValidTeleportLocation(FVector& ProjectedLocationOnNavMesh, FVector HitLocation) const;
+    bool FindPointOnMeshFromNavMesh(FVector LocationOnNavMesh, FHitResult& TraceResult) const;
+    void TryToTeleportOnNewLocation();
     
-    void OnMatchStateChanged(ESTGameState GameState);
+    UFUNCTION()
+    void OnMatchStateChanged(ESGameState GameState);
 private:
-    bool bIsPointerActive;
-    FName PointerMotionSource; // на какой стороне сейчас активна указка
-
     bool bCanTeleport = false;
+    
+    bool bIsPointerActive;
+    ESPointerSourceSide PointerMotionSource = ESPointerSourceSide::NONE; // на какой стороне сейчас активна указка
+
+    bool bValidLocationForTeleportWasFound = false;
+    FVector FoundedTeleportLocationOnNavMesh;
+    
 };

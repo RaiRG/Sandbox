@@ -6,6 +6,8 @@
 #include "SGameModeBase.h"
 #include "Components/Button.h"
 
+DEFINE_LOG_CATEGORY_STATIC(LogSMainMenuWidget, All, All);
+
 void USMainMenuWidget::NativeOnInitialized()
 {
     Super::NativeOnInitialized();
@@ -25,6 +27,7 @@ void USMainMenuWidget::OnStartGame()
 {
     if (!GetGameMode())
         return;
+    UE_LOG(LogSMainMenuWidget, Display, TEXT("OnStartGame"));
     GetGameMode()->StartGame();
 }
 

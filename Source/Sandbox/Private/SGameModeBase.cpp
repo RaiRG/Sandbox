@@ -3,9 +3,18 @@
 
 #include "SGameModeBase.h"
 
+#include "SVrPawn.h"
+
+DEFINE_LOG_CATEGORY_STATIC(LogSGameModeBase, All, All);
+
+ASGameModeBase::ASGameModeBase()
+{
+    DefaultPawnClass = ASVrPawn::StaticClass();
+}
+
 void ASGameModeBase::StartGame()
 {
-    SetMatchState(ESTGameState::InProgress);
+    SetGameState(ESGameState::InProgress);
 }
 
 void ASGameModeBase::QuitGame()
@@ -13,11 +22,20 @@ void ASGameModeBase::QuitGame()
     FPlatformMisc::RequestExit(false);
 }
 
-void ASGameModeBase::SetMatchState(ESTGameState State)
+void ASGameModeBase::BeginPlay()
+{
+    Super::BeginPlay();
+    SetGameState(ESGameState::WaitingToStart);
+}
+
+void ASGameModeBase::SetGameState(ESGameState State)
 {
     if (MatchState == State)
         return;
 
     MatchState = State;
-    OnMatchStateChanged.Broadcast(MatchState);
+
+    UE_LOG(LogSGameModeBase, Display, TEXT("OnGameStateChanged Broadcast"));
+
+    OnGameStateChanged.Broadcast(MatchState);
 }

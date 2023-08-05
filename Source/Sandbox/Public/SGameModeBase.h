@@ -13,17 +13,19 @@
 UCLASS()
 class SANDBOX_API ASGameModeBase : public AGameModeBase
 {
-	GENERATED_BODY()
+    GENERATED_BODY()
 
 public:
-    FOnMatchStateChangedSignature OnMatchStateChanged;
-
+    ASGameModeBase();
+    FOnMatchStateChangedSignature OnGameStateChanged;
     void StartGame();
     void QuitGame();
 
+protected:
+    virtual void BeginPlay() override;
+
 private:
-    ESTGameState MatchState = ESTGameState::WaitingToStart;
-    
-    void SetMatchState(ESTGameState State);
+    ESGameState MatchState = ESGameState::WaitingToStart;
+    void SetGameState(ESGameState State);
 
 };
