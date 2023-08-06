@@ -26,4 +26,6 @@ public:
     virtual FVector GetLocationInWorld() = 0;
     UFUNCTION()
     virtual FName GetNameForOrder() = 0;
+    UFUNCTION()
+    virtual bool CanBePlaced() = 0;
 };

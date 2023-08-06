@@ -3,6 +3,7 @@
 
 #include "InteractableElements/SMagicItem.h"
 #include "NiagaraComponent.h"
+#include "SObjectsHolder.h"
 #include "Kismet/GameplayStatics.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogSMagicItem, All, All);
@@ -20,28 +21,39 @@ ASMagicItem::ASMagicItem()
     MagicTrackComponent->SetupAttachment(StaticMeshComponent);
 }
 
-void ASMagicItem::PickUp(UMeshComponent* MeshForAttaching)
+void ASMagicItem::PickUp(TScriptInterface<ISObjectsHolder> Holder, UMeshComponent* MeshForAttaching)
 {
     UE_LOG(LogSMagicItem, Display, TEXT("Pickup"));
-    if (MeshForAttaching)
+    if (!MeshForAttaching)
+        return;
+
+    if (bIsPickedUp && HolderObj)
     {
-        StaticMeshComponent->SetSimulatePhysics(false);
-        MagicTrackComponent->SetVisibility(true);
-        const FAttachmentTransformRules AttachmentRules(EAttachmentRule::SnapToTarget, true);
-        StaticMeshComponent->AttachToComponent(MeshForAttaching, AttachmentRules, SocketForAttaching);
-        UGameplayStatics::PlaySoundAtLocation(GetWorld(), PickUpSound, StaticMeshComponent->GetComponentLocation());
-        bIsPickedUp = true;
+        HolderObj->ThrowOut();
+        HolderObj = nullptr;
     }
+    HolderObj = Holder;
+    HolderObj->Hold(this);
+    StaticMeshComponent->SetSimulatePhysics(false);
+    MagicTrackComponent->SetVisibility(true);
+    const FAttachmentTransformRules AttachmentRules(EAttachmentRule::SnapToTarget, true);
+    StaticMeshComponent->AttachToComponent(MeshForAttaching, AttachmentRules, SocketForAttaching);
+    UGameplayStatics::PlaySoundAtLocation(GetWorld(), PickUpSound, StaticMeshComponent->GetComponentLocation());
+    bIsPickedUp = true;
+    bCanBePlacedOnTable = false;
+
 }
 
 void ASMagicItem::Drop()
 {
+    HolderObj->ThrowOut();
+    HolderObj = nullptr;
     const FDetachmentTransformRules Rules(EDetachmentRule::KeepWorld, false);
     DetachFromActor(Rules);
     StaticMeshComponent->SetSimulatePhysics(true);
     bIsPickedUp = false;
     MagicTrackComponent->SetVisibility(false);
-
+    bCanBePlacedOnTable = true;    
 }
 
 FVector ASMagicItem::GetLocationInWorld()

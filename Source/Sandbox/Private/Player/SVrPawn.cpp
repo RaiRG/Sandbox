@@ -12,6 +12,7 @@
 #include "EnhancedInputSubsystems.h"
 #include "SGameModeBase.h"
 #include "NavigationSystem.h"
+#include "SMotionController.h"
 #include "SPickableUp.h"
 #include "Components/WidgetInteractionComponent.h"
 #include "Kismet/KismetMathLibrary.h"
@@ -27,42 +28,8 @@ ASVrPawn::ASVrPawn()
 
     CameraComponent = CreateDefaultSubobject<UCameraComponent>("CameraComponent");
     CameraComponent->SetupAttachment(GetRootComponent());
-
-    MotionControllerLeft = CreateDefaultSubobject<UMotionControllerComponent>("MotionControllerLeft");
-    MotionControllerLeft->MotionSource = FName(TEXT("Left"));
-    MotionControllerLeft->SetupAttachment(GetRootComponent());
-
-    MotionControllerRight = CreateDefaultSubobject<UMotionControllerComponent>("MotionControllerRight");
-    MotionControllerRight->MotionSource = FName(TEXT("Right"));
-    MotionControllerRight->SetupAttachment(GetRootComponent());
-
-    StaticMeshComponentLeft = CreateDefaultSubobject<UStaticMeshComponent>("StaticMeshComponentLeft");
-    StaticMeshComponentLeft->SetupAttachment(MotionControllerLeft);
-
-    StaticMeshComponentRight = CreateDefaultSubobject<UStaticMeshComponent>("StaticMeshComponentRight");
-    StaticMeshComponentRight->SetupAttachment(MotionControllerRight);
-
-    PointerTrace = CreateDefaultSubobject<UNiagaraComponent>("PointerTrace");
-    PointerTrace->SetupAttachment(GetRootComponent());
-
-    WidgetInteraction = CreateDefaultSubobject<UWidgetInteractionComponent>("WidgetInteraction");
-    WidgetInteraction->SetupAttachment(PointerTrace);
-    WidgetInteraction->InteractionDistance = 0.0f;
 }
 
-void ASVrPawn::Hold(AActor* ObjectForHolding, USceneComponent* HoldingComponent)
-{
-    HoldedObject = ObjectForHolding;
-    HolderSide = HoldingComponent == StaticMeshComponentLeft ? ESPointerSourceSide::Left : ESPointerSourceSide::Right;
-    bDoesHold = true;
-}
-
-void ASVrPawn::ThrowOut()
-{
-    HoldedObject = nullptr;
-    HolderSide = ESPointerSourceSide::NONE;
-    bDoesHold = false;
-}
 
 void ASVrPawn::BeginPlay()
 {
@@ -81,18 +48,27 @@ void ASVrPawn::BeginPlay()
     {
         UHeadMountedDisplayFunctionLibrary::SetTrackingOrigin(EHMDTrackingOrigin::Floor);
     }
-    if (PointerTrace)
-    {
-        PointerTrace->SetVisibility(false);
-        PointerTrace->SetVectorParameter(PropertyForDistanceAdjusting, FVector(PointerMaxDistance, 0.0f, 0.0f));
-
-    }
 
     auto GameMode = GetWorld() ? Cast<ASGameModeBase>(GetWorld()->GetAuthGameMode()) : nullptr;
     if (GameMode)
     {
         GameMode->OnGameStateChanged.AddUObject(this, &ASVrPawn::OnMatchStateChanged);
     }
+
+    LeftController = Cast<ASMotionController>(GetWorld()->SpawnActor(LeftMotionControllerClass));
+    if (LeftController)
+    {
+        LeftController->SetOwner(this);
+        LeftController->AttachToComponent(GetRootComponent(), FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+    }
+
+    RightController = Cast<ASMotionController>(GetWorld()->SpawnActor(RightMotionControllerClass));
+    if (RightController)
+    {
+        RightController->SetOwner(this);
+        RightController->AttachToComponent(GetRootComponent(), FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+    }
+
 }
 
 void ASVrPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -109,11 +85,6 @@ void ASVrPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
             &ASVrPawn::ActivatePointer, ESPointerSourceSide::Right);
         PlayerEnhancedInputComponent->BindAction(TeleportTraceOnLeft, ETriggerEvent::Started, this,
             &ASVrPawn::ActivatePointer, ESPointerSourceSide::Left);
-
-        PlayerEnhancedInputComponent->BindAction(TeleportTraceOnRight, ETriggerEvent::Triggered, this,
-            &ASVrPawn::UpdatePointerTrace);
-        PlayerEnhancedInputComponent->BindAction(TeleportTraceOnLeft, ETriggerEvent::Triggered, this,
-            &ASVrPawn::UpdatePointerTrace);
 
         PlayerEnhancedInputComponent->BindAction(TeleportTraceOnRight, ETriggerEvent::Completed, this,
             &ASVrPawn::DisablePointer, ESPointerSourceSide::Right);
@@ -152,85 +123,27 @@ void ASVrPawn::SnapTurn(bool IsRightTurn, float Degrees)
     AddActorWorldRotation(Delta);
 }
 
+void ASVrPawn::InputData(const ESPointerSourceSide MotionControllerSourceSide)
+{
+    MotionControllerSourceSide == ESPointerSourceSide::Right ? RightController->InputData() : LeftController->InputData();
+}
+
 void ASVrPawn::ActivatePointer(const ESPointerSourceSide MotionControllerSourceSide)
 {
     if (bIsPointerActive)
         return;
-    if (bDoesHold && MotionControllerSourceSide == HolderSide)
-        return;
 
-    if (MotionControllerSourceSide == ESPointerSourceSide::Right)
-    {
-        AttachPointerToController(ESPointerSourceSide::Right, StaticMeshComponentRight);
-    }
-    else if (MotionControllerSourceSide == ESPointerSourceSide::Left)
-    {
-        AttachPointerToController(ESPointerSourceSide::Left, StaticMeshComponentLeft);
-    }
-
-}
-
-void ASVrPawn::AttachPointerToController(ESPointerSourceSide MotionControllerSourceSide, UMeshComponent* ControllerMesh)
-{
-    PointerTrace->SetVisibility(true);
-    WidgetInteraction->InteractionDistance = PointerMaxDistance;
-    FAttachmentTransformRules AttachmentTransformRules = FAttachmentTransformRules::SnapToTargetNotIncludingScale;
-    PointerTrace->AttachToComponent(ControllerMesh, AttachmentTransformRules, PointerSocketName);
     PointerMotionSource = MotionControllerSourceSide;
     bIsPointerActive = true;
+
+    MotionControllerSourceSide == ESPointerSourceSide::Right ? RightController->ActivatePointer() : LeftController->ActivatePointer();
+
 }
 
-void ASVrPawn::InputData(const ESPointerSourceSide MotionControllerSourceSide)
-{
-    if (!WidgetInteraction || !bIsPointerActive || PointerMotionSource != MotionControllerSourceSide)
-        return;
-    WidgetInteraction->PressPointerKey(EKeys::LeftMouseButton);
-    WidgetInteraction->ReleasePointerKey(EKeys::LeftMouseButton);
-}
 
 void ASVrPawn::TryToInteractWithWorld(const ESPointerSourceSide MotionControllerSourceSide)
 {
-    UE_LOG(LogSVrPawn, Display, TEXT("TryToInteractWithWorld 1!"));
-    if (bDoesHold && HolderSide == MotionControllerSourceSide)
-    {
-        UE_LOG(LogSVrPawn, Display, TEXT("We hold 2!"));
-        if (UKismetSystemLibrary::DoesImplementInterface(HoldedObject, USPickableUp::StaticClass()))
-        {
-            if (ISPickableUp* ActorForPicking = Cast<ISPickableUp>(HoldedObject))
-            {
-
-                UE_LOG(LogSVrPawn, Display, TEXT("Try to call drop on %s!"), *HoldedObject->GetName());
-
-                ActorForPicking->Drop();
-                ThrowOut();
-
-            }
-        }
-    }
-    else if (!bDoesHold)
-    {
-
-        auto MeshForAttaching = MotionControllerSourceSide == ESPointerSourceSide::Left
-                                    ? StaticMeshComponentLeft
-                                    : StaticMeshComponentRight;
-        TArray<AActor*> OverlappingActors;
-        MeshForAttaching->GetOverlappingActors(OverlappingActors, AActor::StaticClass());
-        for (auto OverlappingActor : OverlappingActors)
-        {
-            if (UKismetSystemLibrary::DoesImplementInterface(OverlappingActor, USPickableUp::StaticClass()))
-            {
-                if (ISPickableUp* ActorForPicking = Cast<ISPickableUp>(OverlappingActor))
-                {
-
-                    UE_LOG(LogSVrPawn, Display, TEXT("TryToCall pickup!"));
-                    ActorForPicking->PickUp(MeshForAttaching);
-                    Hold(OverlappingActor, MeshForAttaching);
-                    break;
-
-                }
-            }
-        }
-    }
+    ESPointerSourceSide::Right == MotionControllerSourceSide ? RightController->InteractWithWorld() : LeftController->InteractWithWorld();
 }
 
 void ASVrPawn::OnMatchStateChanged(ESGameState GameState)
@@ -250,66 +163,12 @@ void ASVrPawn::DisablePointer(const ESPointerSourceSide MotionControllerSourceSi
     if (PointerMotionSource == MotionControllerSourceSide)
     {
         TryToTeleportOnNewLocation();
-        PointerTrace->SetVisibility(false);
+        MotionControllerSourceSide == ESPointerSourceSide::Right ? RightController->DisablePointer() : LeftController->DisablePointer();
         PointerMotionSource = ESPointerSourceSide::NONE;
         bIsPointerActive = false;
-        WidgetInteraction->InteractionDistance = 0.0f;
     }
 }
 
-void ASVrPawn::UpdatePointerTrace()
-{
-
-    if (bCanTeleport && bIsPointerActive)
-    {
-        FVector SocketLocation;
-        FRotator SocketRotation;
-        PointerMotionSource == ESPointerSourceSide::Right
-            ? StaticMeshComponentRight->GetSocketWorldLocationAndRotation(PointerSocketName, SocketLocation,
-                SocketRotation)
-            : StaticMeshComponentLeft->GetSocketWorldLocationAndRotation(PointerSocketName, SocketLocation,
-                SocketRotation);
-
-        auto ForwardVectorOfPointer = UKismetMathLibrary::GetForwardVector(SocketRotation);
-        FVector EndLocation = SocketLocation + ForwardVectorOfPointer * PointerMaxDistance;
-
-        FHitResult HitResult;
-        auto IsHit = GetWorld()->LineTraceSingleByChannel(HitResult, SocketLocation, EndLocation,
-            ECollisionChannel::ECC_WorldStatic);
-
-        auto Distance = FVector::Distance(SocketLocation, HitResult.Location);
-        PointerTrace->SetVectorParameter(PropertyForDistanceAdjusting, FVector(Distance, 0.0f, 0.0f));
-
-        if (IsHit)
-        {
-            //Находим ближайшую точку на навигационном мэше, если она есть...
-            bValidLocationForTeleportWasFound = IsValidTeleportLocation(FoundedTeleportLocationOnNavMesh, HitResult.Location);
-        }
-
-        if (bValidLocationForTeleportWasFound)
-        {
-            PointerTrace->SetColorParameter(PropertyForColorAdjusting, ValidHitColor);
-        }
-        else
-        {
-            FoundedTeleportLocationOnNavMesh = FVector();
-            PointerTrace->SetColorParameter(PropertyForColorAdjusting, InvalidHitColor);
-        }
-
-    }
-}
-
-bool ASVrPawn::IsValidTeleportLocation(FVector& ProjectedLocationOnNavMesh, FVector HitLocation) const
-{
-    FNavLocation NavLoc;
-    if (auto NavSystem = Cast<UNavigationSystemV1>(GetWorld()->GetNavigationSystem()))
-    {
-        bool bProjectedLocationValid = NavSystem->ProjectPointToNavigation(HitLocation, NavLoc, QueryingExtent);
-        ProjectedLocationOnNavMesh = NavLoc.Location;
-        return bProjectedLocationValid;
-    }
-    return false;
-}
 
 bool ASVrPawn::FindPointOnMeshFromNavMesh(FVector LocationOnNavMesh, FHitResult& TraceResult) const
 {
@@ -333,14 +192,23 @@ bool ASVrPawn::FindPointOnMeshFromNavMesh(FVector LocationOnNavMesh, FHitResult&
 
 void ASVrPawn::TryToTeleportOnNewLocation()
 {
-    if (bCanTeleport && bValidLocationForTeleportWasFound && UHeadMountedDisplayFunctionLibrary::GetHMDWornState() == EHMDWornState::Worn)
+    if (!bCanTeleport)
+        return;
+    const auto bValidLocationForTeleportWasFound = PointerMotionSource == ESPointerSourceSide::Right
+                                                       ? RightController->GetValidLocationOnNavMeshWasFound()
+                                                       : LeftController->GetValidLocationOnNavMeshWasFound();
+    if (!bValidLocationForTeleportWasFound)
+        return;
+    if (UHeadMountedDisplayFunctionLibrary::GetHMDWornState() != EHMDWornState::Worn)
+        return;
+
+    const auto FoundedTeleportLocationOnNavMesh = PointerMotionSource == ESPointerSourceSide::Right
+                                                      ? RightController->GetFoundedValidLocationOnNavMesh()
+                                                      : LeftController->GetFoundedValidLocationOnNavMesh();
+    FHitResult Result;
+    if (const bool FindPointOnMeshUnderNavMesh = FindPointOnMeshFromNavMesh(FoundedTeleportLocationOnNavMesh, Result))
     {
-        FHitResult Result;
-        if (const bool FindPointOnMeshUnderNavMesh = FindPointOnMeshFromNavMesh(FoundedTeleportLocationOnNavMesh, Result))
-        {
-            SetActorLocation(Result.Location);
-        }
+        SetActorLocation(Result.Location);
     }
-    bValidLocationForTeleportWasFound = false;
-    FoundedTeleportLocationOnNavMesh = FVector();
+
 }

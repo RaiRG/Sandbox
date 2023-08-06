@@ -30,47 +30,7 @@ void ASTable::NotifyActorBeginOverlap(AActor* OtherActor)
     Super::NotifyActorBeginOverlap(OtherActor);
     if (UKismetSystemLibrary::DoesImplementInterface(OtherActor, USStoredInOrder::StaticClass()))
     {
-        if (ISStoredInOrder* PlacedOnTableActor = Cast<ISStoredInOrder>(OtherActor))
-        {
-            const auto WorldLocation = PlacedOnTableActor->GetLocationInWorld();
-            const FVector ProjectedPoint = FVector::DotProduct(WorldLocation, DirectionOfOrder->GetForwardVector()) * DirectionOfOrder->
-                                           GetForwardVector();
-            ActorsPlacedOnTable.Add(PlacedOnTableActor);
-            ActorsMapping.Add(OtherActor);
-            ProjectedPoints.Add(ProjectedPoint);
-            ProjectedPoints.Sort([&](const FVector& A, const FVector& B)
-            {
-                return FVector::DotProduct(A, DirectionOfOrder->GetForwardVector()) < FVector::DotProduct(B,
-                           DirectionOfOrder->GetForwardVector());
-            });
-            ItemProjectedPointMapping.Add(PlacedOnTableActor, ProjectedPoint);
-            ProjectedPointToItemMapping.Add(ProjectedPoint, PlacedOnTableActor);
-
-            UE_LOG(LogSTable, Display, TEXT("Order:"));
-
-            for (FVector Point : ProjectedPoints)
-            {
-                int32 Index;
-                ActorsPlacedOnTable.Find(ProjectedPointToItemMapping[Point], Index);
-
-                auto Ptr = TScriptInterface<ISStoredInOrder>();
-                Ptr.SetInterface(ProjectedPointToItemMapping[Point]);
-                Ptr.SetObject(ActorsMapping[Index]);
-                ObjsInRightOrder.Add(Ptr);
-                if (auto Int = Ptr.GetInterface())
-                {
-                    UE_LOG(LogSTable, Display, TEXT("%s"), *Int->GetNameForOrder().ToString());
-                }
-                else
-                {
-                    UE_LOG(LogSTable, Warning, TEXT("Int is null"));
-
-                }
-            }
-
-            OnOrderOfObjsChanged.Broadcast(ObjsInRightOrder);
-            ObjsInRightOrder.Empty();
-        }
+        WatchFor(TScriptInterface<ISStoredInOrder>(OtherActor));
     }
 }
 
@@ -78,16 +38,55 @@ void ASTable::NotifyActorEndOverlap(AActor* OtherActor)
 {
     Super::NotifyActorEndOverlap(OtherActor);
     {
-        if (ISStoredInOrder* PlacedOnTable = Cast<ISStoredInOrder>(OtherActor))
+        if (UKismetSystemLibrary::DoesImplementInterface(OtherActor, USStoredInOrder::StaticClass()))
         {
-            ActorsPlacedOnTable.Remove(PlacedOnTable);
-            if (ItemProjectedPointMapping.Contains(PlacedOnTable))
-            {
-                const FVector ProjectedPoint = ItemProjectedPointMapping[PlacedOnTable];
-                ItemProjectedPointMapping.Remove(PlacedOnTable);
-                ProjectedPointToItemMapping.Remove(ProjectedPoint);
-                ProjectedPoints.Remove(ProjectedPoint);
-            }
+            StopWatchingFor(TScriptInterface<ISStoredInOrder>(OtherActor));
         }
     }
+}
+
+void ASTable::Tick(float DeltaSeconds)
+{
+    Super::Tick(DeltaSeconds);
+    //смотрим, какие объекты на столе доступны для составления последовательности, находим у них проекцию на нужные вектор и запоминаем необходимые данные
+    TArray<TTuple<FVector, TScriptInterface<ISStoredInOrder>>> ProjectedPointsOfAvialableItems;
+    for (int i = 0; i < AllWatchedItemsInt.Num(); i++)
+    {
+        auto WatchedItem = AllWatchedItemsInt[i];
+        if (WatchedItem->CanBePlaced())
+        {
+            const auto WorldLocation = WatchedItem->GetLocationInWorld();
+            const FVector ProjectedPoint = FVector::DotProduct(WorldLocation, DirectionOfOrder->GetForwardVector()) * DirectionOfOrder->
+                                           GetForwardVector();
+            ProjectedPointsOfAvialableItems.Add(TTuple<FVector, TScriptInterface<ISStoredInOrder>>(ProjectedPoint, WatchedItem));
+        }
+    }
+
+    //сортируем все точки
+    ProjectedPointsOfAvialableItems.Sort([&](const TTuple<FVector, TScriptInterface<ISStoredInOrder>>& A,
+        const TTuple<FVector, TScriptInterface<ISStoredInOrder>>& B)
+        {
+            return FVector::DotProduct(A.Key, DirectionOfOrder->GetForwardVector()) < FVector::DotProduct(B.Key,
+                       DirectionOfOrder->GetForwardVector());
+        });
+
+    TArray<TScriptInterface<ISStoredInOrder>> ObjectsInRightOrder;
+    for (auto Point : ProjectedPointsOfAvialableItems)
+    {
+        auto ItemInfo = Point.Value;
+        ObjectsInRightOrder.Add(ItemInfo);
+    }
+    OnOrderOfObjsChanged.Broadcast(ObjectsInRightOrder);
+}
+
+void ASTable::WatchFor(TScriptInterface<ISStoredInOrder> Item)
+{
+    AllWatchedItemsInt.Add(Item);
+}
+
+void ASTable::StopWatchingFor(TScriptInterface<ISStoredInOrder> ItemInterf)
+{
+
+    AllWatchedItemsInt.Remove(ItemInterf);
+
 }

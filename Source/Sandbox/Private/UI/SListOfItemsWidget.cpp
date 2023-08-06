@@ -17,8 +17,7 @@ void USListOfItemsWidget::NativeOnInitialized()
 
     for (int i = 0; i < MaxNumberOfShowedItem; i++)
     {
-        auto Widget = Cast<USOneItemInfoWidget>(CreateWidget(this, OneItemInfoWidgetClass));
-        if (Widget)
+        if (auto Widget = Cast<USOneItemInfoWidget>(CreateWidget(this, OneItemInfoWidgetClass)))
         {
             VerticalBox->AddChild(Widget);
             ItemsInOrder.Add(Widget);
@@ -50,16 +49,13 @@ void USListOfItemsWidget::ChangeOrder(TArray<TScriptInterface<ISStoredInOrder>> 
             auto Item = Order[Index].GetInterface();
             if (Item)
             {
-                auto Str = Item->GetNameForOrder().ToString();
-                UE_LOG(LogSListOfItemsWidget, Display, TEXT("Val %s"), *Str);
-                const FText Text = FText::FromString(Str);
-                OrderWidget->SetText(Text);
+                OrderWidget->SetText(FText::FromString(Item->GetNameForOrder().ToString()));
                 Index++;
             }
         }
         else
         {
-            break;
+            OrderWidget->SetText(FText::FromString(FString("")));
         }
     }
 }

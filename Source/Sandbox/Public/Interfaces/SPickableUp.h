@@ -22,7 +22,7 @@ class SANDBOX_API ISPickableUp
 
 public:
     UFUNCTION()
-    virtual void PickUp(UMeshComponent* MeshForAttaching) = 0;
+    virtual void PickUp(TScriptInterface<ISObjectsHolder> Holder, UMeshComponent* MeshForAttaching) = 0;
     UFUNCTION()
     virtual void Drop() = 0;
 

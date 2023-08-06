@@ -17,7 +17,8 @@ class SANDBOX_API ASTable : public AActor, public ISStoreObjsInOrder
 
 public:
     ASTable();
-    virtual FOnOrderOfObjsChangedSignature& GetOnOrderOfObjsChangedSignature() override {return OnOrderOfObjsChanged; };
+    virtual FOnOrderOfObjsChangedSignature& GetOnOrderOfObjsChangedSignature() override { return OnOrderOfObjsChanged; };
+
 protected:
     UPROPERTY(BlueprintReadWrite, EditDefaultsOnly)
     USceneComponent* SceneComponent;
@@ -27,18 +28,15 @@ protected:
 
     UPROPERTY(BlueprintReadWrite, EditInstanceOnly)
     UArrowComponent* DirectionOfOrder;
-    
+
     virtual void NotifyActorBeginOverlap(AActor* OtherActor) override;
     virtual void NotifyActorEndOverlap(AActor* OtherActor) override;
+    virtual void Tick(float DeltaSeconds) override;
+
+    void WatchFor(TScriptInterface<ISStoredInOrder> ItemInterf);
+    void StopWatchingFor(TScriptInterface<ISStoredInOrder> ItemInterf);
     FOnOrderOfObjsChangedSignature OnOrderOfObjsChanged;
+
 private:
-    UPROPERTY()
-    TArray<AActor*> ActorsMapping;
-    TArray<ISStoredInOrder*> ActorsPlacedOnTable;
-    TArray<FVector> ProjectedPoints;
-    
-    TMap<FVector, ISStoredInOrder*> ProjectedPointToItemMapping;
-    TMap<ISStoredInOrder*, FVector> ItemProjectedPointMapping;
-    
-    TArray<TScriptInterface<ISStoredInOrder>> ObjsInRightOrder;
+    TArray<TScriptInterface<ISStoredInOrder>> AllWatchedItemsInt;
 };

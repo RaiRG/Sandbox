@@ -6,6 +6,7 @@
 #include "SPickableUp.h"
 #include "SStoredInOrder.h"
 #include "GameFramework/Actor.h"
+#include "Microsoft/AllowMicrosoftPlatformTypes.h"
 #include "SMagicItem.generated.h"
 
 class UNiagaraComponent;
@@ -17,10 +18,11 @@ class SANDBOX_API ASMagicItem : public AActor, public ISPickableUp, public ISSto
 public:
     ASMagicItem();
 
-    virtual void PickUp(UMeshComponent* MeshForAttaching) override;
+    virtual void PickUp(TScriptInterface<ISObjectsHolder> Holder, UMeshComponent* MeshForAttaching) override;
     virtual void Drop() override;
     virtual FVector GetLocationInWorld() override;
     virtual FName  GetNameForOrder() override;
+    virtual bool CanBePlaced() override {return bCanBePlacedOnTable; }
 protected:
     virtual void BeginPlay() override;
     UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="Components")
@@ -41,6 +43,12 @@ protected:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="PickableUp")
     FName TestName;
 private:
+    bool bCanBePlacedOnTable = true;
+
+    //PickUp:
     bool bIsPickedUp = false;
+    TScriptInterface<ISObjectsHolder> HolderObj;
+    
     FTransform StartStateRelativeTransformOfStaticMesh;
+ 
 };
