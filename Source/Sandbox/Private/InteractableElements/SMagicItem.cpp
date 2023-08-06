@@ -46,6 +46,7 @@ void ASMagicItem::PickUp(TScriptInterface<ISObjectsHolder> Holder, UMeshComponen
 
 void ASMagicItem::Drop()
 {
+    UGameplayStatics::PlaySoundAtLocation(GetWorld(), DropSound, StaticMeshComponent->GetComponentLocation());
     HolderObj->ThrowOut();
     HolderObj = nullptr;
     const FDetachmentTransformRules Rules(EDetachmentRule::KeepWorld, false);
@@ -53,7 +54,7 @@ void ASMagicItem::Drop()
     StaticMeshComponent->SetSimulatePhysics(true);
     bIsPickedUp = false;
     MagicTrackComponent->SetVisibility(false);
-    bCanBePlacedOnTable = true;    
+    bCanBePlacedOnTable = true;
 }
 
 FVector ASMagicItem::GetLocationInWorld()

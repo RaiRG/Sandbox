@@ -152,10 +152,6 @@ void ASVrPawn::OnMatchStateChanged(ESGameState GameState)
     {
         bCanTeleport = true;
     }
-    else
-    {
-        bCanTeleport = false;
-    }
 }
 
 void ASVrPawn::DisablePointer(const ESPointerSourceSide MotionControllerSourceSide)

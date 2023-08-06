@@ -4,16 +4,18 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
-#include "SListOfItemsWidget.generated.h"
+#include "SDynamicListOfItemsWidget.generated.h"
 
 class ISStoredInOrder;
 class UVerticalBox;
 class USOneItemInfoWidget;
+class ASGameModeBase;
+class ISStoreObjsInOrder;
 /**
  * 
  */
 UCLASS()
-class SANDBOX_API USListOfItemsWidget : public UUserWidget
+class SANDBOX_API USDynamicListOfItemsWidget : public UUserWidget
 {
 	GENERATED_BODY()
 
@@ -29,8 +31,14 @@ protected:
     UPROPERTY(EditDefaultsOnly)
     int32 MaxNumberOfShowedItem = 3;
 private:
+    TScriptInterface<ISStoreObjsInOrder> ActorStoresObjInOrder;
     UPROPERTY()
-    TArray<USOneItemInfoWidget*> ItemsInOrder;
+    TArray<USOneItemInfoWidget*> WidgetsWithOrderedItemsInfo;
+    
     UFUNCTION()
     void ChangeOrder(TArray<TScriptInterface<ISStoredInOrder>> Order);
+
+    UFUNCTION()
+    void OnGameStateChanged(ESGameState State);
+    ASGameModeBase* GetGameMode();
 };

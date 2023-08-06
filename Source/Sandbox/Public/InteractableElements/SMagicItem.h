@@ -6,7 +6,6 @@
 #include "SPickableUp.h"
 #include "SStoredInOrder.h"
 #include "GameFramework/Actor.h"
-#include "Microsoft/AllowMicrosoftPlatformTypes.h"
 #include "SMagicItem.generated.h"
 
 class UNiagaraComponent;
@@ -36,6 +35,9 @@ protected:
 
     UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="PickableUp")
     USoundBase* PickUpSound;
+
+    UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="PickableUp")
+    USoundBase* DropSound;
     
     UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="PickableUp")
     FName SocketForAttaching = "SocketForAttaching";

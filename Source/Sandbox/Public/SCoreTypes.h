@@ -15,7 +15,7 @@ enum class ESGameState : uint8
 {
     WaitingToStart,
     InProgress,
-    Pause
+    End
 };
 
 UENUM(BlueprintType)
@@ -24,4 +24,16 @@ enum class ESPointerSourceSide : uint8
     NONE,
     Left,
     Right
+};
+
+USTRUCT()
+struct FSGameResultInfo
+{
+    GENERATED_BODY()
+
+    UPROPERTY()
+    FDateTime TimeAtTheEnd;
+
+    UPROPERTY()
+    FTimespan TotalTime;
 };

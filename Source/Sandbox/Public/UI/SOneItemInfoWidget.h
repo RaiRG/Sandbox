@@ -21,4 +21,5 @@ public:
 protected:
     UPROPERTY(meta=(BindWidget))
     UTextBlock* TextBlock;
+    
 };

@@ -3,9 +3,12 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "SCoreTypes.h"
 #include "Blueprint/UserWidget.h"
 #include "SMainMenuWidget.generated.h"
 
+class USAllGamesResultsWidget;
+class USOrderGameWidget;
 class ASGameModeBase;
 class UButton;
 
@@ -23,6 +26,11 @@ class SANDBOX_API USMainMenuWidget : public UUserWidget
     UPROPERTY(meta=(BindWidget))
     UButton* QuitButton;
 
+    UPROPERTY(meta=(BindWidget))
+    USOrderGameWidget* OrderGameWidget;
+
+    UPROPERTY(meta=(BindWidget))
+    USAllGamesResultsWidget* AllGamesResultsWidget;
 protected:
     virtual void NativeOnInitialized() override;
     
@@ -30,8 +38,13 @@ protected:
     void OnStartGame();
 
     UFUNCTION()
+    void OnShowResults();
+
+    UFUNCTION()
     void OnQuitGame();
 private:
     ASGameModeBase* GetGameMode();
+    void OnGameStateChanged(ESGameState GameState);
+    void ChangeVisibilityOfChildWidgets(ESlateVisibility OrderGameWidgetVisibility, ESlateVisibility AllGamesResultsWidgetVisibility);
     
 };

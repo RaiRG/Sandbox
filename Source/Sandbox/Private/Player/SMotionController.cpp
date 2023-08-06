@@ -132,9 +132,9 @@ void ASMotionController::InteractWithWorld()
     {
         if (UKismetSystemLibrary::DoesImplementInterface(HoldedObject, USPickableUp::StaticClass()))
         {
-            if (ISPickableUp* ActorForPicking = Cast<ISPickableUp>(HoldedObject))
+            if (TScriptInterface<ISPickableUp> ActorForDrop =TScriptInterface<ISPickableUp>(HoldedObject))
             {
-                ActorForPicking->Drop();
+                ActorForDrop->Drop();
             }
         }
     }
@@ -146,7 +146,7 @@ void ASMotionController::InteractWithWorld()
         {
             if (UKismetSystemLibrary::DoesImplementInterface(OverlappingActor, USPickableUp::StaticClass()))
             {
-                if (ISPickableUp* ActorForPicking = Cast<ISPickableUp>(OverlappingActor))
+                if (TScriptInterface<ISPickableUp> ActorForPicking =TScriptInterface<ISPickableUp>(OverlappingActor))
                 {
                     ActorForPicking->PickUp(this, StaticMeshComponent);
                     break;
