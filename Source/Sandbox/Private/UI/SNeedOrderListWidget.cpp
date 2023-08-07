@@ -42,7 +42,7 @@ void USNeedOrderListWidget::OnGameStateChanged(ESGameState State)
                 VerticalBox->AddChild(Widget);
                 if (IsStoredInOrder)
                 {
-                    Widget->SetText(FText::FromString(IsStoredInOrder->GetNameForOrder().ToString()));
+                    Widget->SetIcon(IsStoredInOrder->GetIcon());
                 }
             }
         }

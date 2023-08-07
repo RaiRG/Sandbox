@@ -8,6 +8,7 @@
 #include "GameFramework/Actor.h"
 #include "SMagicItem.generated.h"
 
+class USMagicItemProperties;
 class UNiagaraComponent;
 UCLASS()
 class SANDBOX_API ASMagicItem : public AActor, public ISPickableUp, public ISStoredInOrder
@@ -20,24 +21,24 @@ public:
     virtual void PickUp(TScriptInterface<ISObjectsHolder> Holder, UMeshComponent* MeshForAttaching) override;
     virtual void Drop() override;
     virtual FVector GetLocationInWorld() override;
-    virtual FName  GetNameForOrder() override;
     virtual bool CanBePlaced() override {return bCanBePlacedOnTable; }
+    virtual UTexture2D* GetIcon() override;
 protected:
     virtual void BeginPlay() override;
     UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="Components")
     USceneComponent* SceneComponent;
-
+    
+    UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="Components")
+    UNiagaraComponent* MagicTrackComponent;
+    
     UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="Components")
     UStaticMeshComponent* StaticMeshComponent;
 
-    UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="Components")
-    UNiagaraComponent* MagicTrackComponent;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Properties")
+    USMagicItemProperties* Properties;
 
-    UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="PickableUp")
-    USoundBase* PickUpSound;
-
-    UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="PickableUp")
-    USoundBase* DropSound;
+    UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="Properties")
+    FName VariableNameOfColor = "User.ColorOfTrack";
     
     UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="PickableUp")
     FName SocketForAttaching = "SocketForAttaching";

@@ -22,7 +22,7 @@ void USDynamicListOfItemsWidget::NativeOnInitialized()
         {
             VerticalBox->AddChild(Widget);
             WidgetsWithOrderedItemsInfo.Add(Widget);
-            Widget->SetText(FText());
+            //Widget->(FText());
         }
     }
 
@@ -43,13 +43,13 @@ void USDynamicListOfItemsWidget::ChangeOrder(TArray<TScriptInterface<ISStoredInO
             auto Item = Order[Index].GetInterface();
             if (Item)
             {
-                OrderWidget->SetText(FText::FromString(Item->GetNameForOrder().ToString()));
+                OrderWidget->SetIcon(Item->GetIcon());
                 Index++;
             }
         }
         else
         {
-            OrderWidget->SetText(FText::FromString(FString("")));
+            OrderWidget->SetIcon(nullptr);
         }
     }
 }

@@ -25,7 +25,7 @@ public:
     UFUNCTION()
     virtual FVector GetLocationInWorld() = 0;
     UFUNCTION()
-    virtual FName GetNameForOrder() = 0;
-    UFUNCTION()
     virtual bool CanBePlaced() = 0;
+    UFUNCTION()
+    virtual UTexture2D* GetIcon() = 0;
 };

@@ -4,22 +4,20 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
+
 #include "SOneItemInfoWidget.generated.h"
 
-class UTextBlock;
-/**
- * 
- */
+class UImage;
+
+
 UCLASS()
 class SANDBOX_API USOneItemInfoWidget : public UUserWidget
 {
 	GENERATED_BODY()
 
 public:
-    void SetText(FText Text);
-
+    void SetIcon(UTexture2D* NewIcon);
 protected:
     UPROPERTY(meta=(BindWidget))
-    UTextBlock* TextBlock;
-    
+    UImage* Icon;
 };

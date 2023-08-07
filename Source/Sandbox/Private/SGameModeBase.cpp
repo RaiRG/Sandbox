@@ -37,13 +37,6 @@ void ASGameModeBase::BeginPlay()
             }
         }
     }
-    UE_LOG(LogSGameModeBase, Warning, TEXT("NeededOrderOfItems:"));
-
-    for (auto StoredInOrderActor : NeededOrderOfItems)
-    {
-        UE_LOG(LogSGameModeBase, Warning, TEXT("%s"), *StoredInOrderActor->GetNameForOrder().ToString());
-    }
-
 }
 
 void ASGameModeBase::StartGame()
@@ -107,10 +100,6 @@ void ASGameModeBase::OnOrderOfItemsWasChanged(const TArray<TScriptInterface<ISSt
     FSGameResultInfo PlayerResults;
     PlayerResults.TimeAtTheEnd = FDateTime::Now();
     PlayerResults.TotalTime = PlayerResults.TimeAtTheEnd - StartGameTime;
-    UE_LOG(LogSGameModeBase, Display, TEXT("Time at end: %s"), *PlayerResults.TimeAtTheEnd.ToString());
-    UE_LOG(LogSGameModeBase, Display, TEXT("StartGameTime: %s"), *StartGameTime.ToString());
-    UE_LOG(LogSGameModeBase, Display, TEXT("TotalTime: %s"), *PlayerResults.TotalTime.ToString());
-
     SaveGameResults(PlayerResults);
     SetGameState(ESGameState::End);
 }

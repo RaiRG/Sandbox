@@ -2,10 +2,9 @@
 
 
 #include "UI/SOneItemInfoWidget.h"
+#include "Components/Image.h"
 
-#include "Components/TextBlock.h"
-
-void USOneItemInfoWidget::SetText(FText Text)
+void USOneItemInfoWidget::SetIcon(UTexture2D* NewIcon)
 {
-    TextBlock->SetText(Text);
+    Icon->SetBrushFromTexture(NewIcon);
 }

@@ -3,6 +3,7 @@
 
 #include "InteractableElements/SMagicItem.h"
 #include "NiagaraComponent.h"
+#include "SMagicItemProperties.h"
 #include "SObjectsHolder.h"
 #include "Kismet/GameplayStatics.h"
 
@@ -38,7 +39,10 @@ void ASMagicItem::PickUp(TScriptInterface<ISObjectsHolder> Holder, UMeshComponen
     MagicTrackComponent->SetVisibility(true);
     const FAttachmentTransformRules AttachmentRules(EAttachmentRule::SnapToTarget, true);
     StaticMeshComponent->AttachToComponent(MeshForAttaching, AttachmentRules, SocketForAttaching);
-    UGameplayStatics::PlaySoundAtLocation(GetWorld(), PickUpSound, StaticMeshComponent->GetComponentLocation());
+    if (Properties)
+    {
+        UGameplayStatics::PlaySoundAtLocation(GetWorld(), Properties->PickUpSound, StaticMeshComponent->GetComponentLocation());
+    }
     bIsPickedUp = true;
     bCanBePlacedOnTable = false;
 
@@ -46,7 +50,10 @@ void ASMagicItem::PickUp(TScriptInterface<ISObjectsHolder> Holder, UMeshComponen
 
 void ASMagicItem::Drop()
 {
-    UGameplayStatics::PlaySoundAtLocation(GetWorld(), DropSound, StaticMeshComponent->GetComponentLocation());
+    if (Properties)
+    {
+        UGameplayStatics::PlaySoundAtLocation(GetWorld(), Properties->DropSound, StaticMeshComponent->GetComponentLocation());
+    }
     HolderObj->ThrowOut();
     HolderObj = nullptr;
     const FDetachmentTransformRules Rules(EDetachmentRule::KeepWorld, false);
@@ -62,9 +69,13 @@ FVector ASMagicItem::GetLocationInWorld()
     return StaticMeshComponent->GetComponentLocation();
 }
 
-FName ASMagicItem::GetNameForOrder()
+
+UTexture2D* ASMagicItem::GetIcon()
 {
-    return TestName;
+    if (!Properties)
+        return nullptr;
+
+    return Properties->Icon;
 }
 
 void ASMagicItem::BeginPlay()
@@ -73,4 +84,10 @@ void ASMagicItem::BeginPlay()
     StartStateRelativeTransformOfStaticMesh = StaticMeshComponent->GetRelativeTransform();
     StaticMeshComponent->SetSimulatePhysics(true);
     MagicTrackComponent->SetVisibility(false);
+
+    if (Properties)
+    {
+        MagicTrackComponent->SetColorParameter(VariableNameOfColor, Properties->MagicTrackColor);
+        StaticMeshComponent->SetStaticMesh(Properties->Appearance);
+    }
 }
