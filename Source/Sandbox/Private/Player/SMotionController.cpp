@@ -56,7 +56,7 @@ void ASMotionController::Tick(float DeltaTime)
 
 void ASMotionController::UpdatePointerTrace()
 {
-    if (bIsPointerActive)
+    if (bIsPointerActive && bCanSearchBestLocationOnNavMesh)
     {
         FVector SocketLocation;
         FRotator SocketRotation;
@@ -71,8 +71,10 @@ void ASMotionController::UpdatePointerTrace()
         auto IsHit = GetWorld()->LineTraceSingleByChannel(HitResult, SocketLocation, EndLocation,
             ECollisionChannel::ECC_WorldStatic);
 
-        auto Distance = FVector::Distance(SocketLocation, HitResult.Location);
-        PointerTrace->SetVectorParameter(PropertyForDistanceAdjusting, FVector(Distance, 0.0f, 0.0f));
+        auto DistanceToWorldObj = FVector::Distance(SocketLocation, HitResult.Location);
+        auto DistanceTillWidget = FVector::Distance(WidgetInteraction->GetComponentLocation(), WidgetInteraction->GetLastHitResult().Location);
+        auto ResultDistance = FMath::Min(DistanceToWorldObj, DistanceTillWidget);
+        PointerTrace->SetVectorParameter(PropertyForDistanceAdjusting, FVector(ResultDistance, 0.0f, 0.0f));
 
         if (IsHit)
         {

@@ -151,6 +151,8 @@ void ASVrPawn::OnMatchStateChanged(ESGameState GameState)
     if (GameState == ESGameState::InProgress)
     {
         bCanTeleport = true;
+        RightController->SetCanFindBestLocationOnNavMesh(true);
+        LeftController->SetCanFindBestLocationOnNavMesh(true);
     }
 }
 

@@ -37,7 +37,7 @@ void ASMagicItem::PickUp(TScriptInterface<ISObjectsHolder> Holder, UMeshComponen
     HolderObj->Hold(this);
     StaticMeshComponent->SetSimulatePhysics(false);
     MagicTrackComponent->SetVisibility(true);
-    const FAttachmentTransformRules AttachmentRules(EAttachmentRule::SnapToTarget, true);
+    const FAttachmentTransformRules AttachmentRules(EAttachmentRule::KeepWorld, true);
     StaticMeshComponent->AttachToComponent(MeshForAttaching, AttachmentRules, SocketForAttaching);
     if (Properties)
     {
@@ -81,7 +81,6 @@ UTexture2D* ASMagicItem::GetIcon()
 void ASMagicItem::BeginPlay()
 {
     Super::BeginPlay();
-    StartStateRelativeTransformOfStaticMesh = StaticMeshComponent->GetRelativeTransform();
     StaticMeshComponent->SetSimulatePhysics(true);
     MagicTrackComponent->SetVisibility(false);
 

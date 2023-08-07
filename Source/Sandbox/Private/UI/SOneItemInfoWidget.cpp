@@ -6,5 +6,8 @@
 
 void USOneItemInfoWidget::SetIcon(UTexture2D* NewIcon)
 {
-    Icon->SetBrushFromTexture(NewIcon);
+    if (Icon)
+    {
+        Icon->SetBrushFromTexture(NewIcon);
+    }
 }

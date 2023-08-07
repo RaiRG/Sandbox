@@ -25,6 +25,9 @@ protected:
     
     UPROPERTY(EditDefaultsOnly)
     TSubclassOf<USOneGameResultInfoWidget> OneGameResultInfoWidgetClass;
+
+    UPROPERTY(EditDefaultsOnly)
+    int32 MaxNumberOfShowedResults = 3;
 private:
     void FillWithInfoAboutPreviousGames();
     void OnGameStateChanged(ESGameState GameState);

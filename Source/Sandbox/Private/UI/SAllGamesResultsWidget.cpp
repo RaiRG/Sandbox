@@ -32,13 +32,20 @@ void USAllGamesResultsWidget::FillWithInfoAboutPreviousGames()
     if (auto GameInstance = Cast<USGameInstance>(GetWorld()->GetGameInstance()))
     {
         auto AllGamesInfo = GameInstance->LoadAllGamesInfo();
-        for (auto GameInfo : AllGamesInfo)
+        
+        int32 AddedWidgetNumber = 0;
+        for (int i=AllGamesInfo.Num()-1; i>=0; i--)
         {
-            UE_LOG(LogSAllGamesResultsWidget, Display, TEXT("Founded game!"))
-            if (auto Widget = Cast<USOneGameResultInfoWidget>(CreateWidget(this, OneGameResultInfoWidgetClass)))
+            if (AddedWidgetNumber<MaxNumberOfShowedResults)
             {
-                Widget->SetInfo(GameInfo);
-                AllGamesListVerticalBox->AddChild(Widget);
+                auto GameInfo = AllGamesInfo[i];
+                UE_LOG(LogSAllGamesResultsWidget, Display, TEXT("Founded game!"))
+                if (auto Widget = Cast<USOneGameResultInfoWidget>(CreateWidget(this, OneGameResultInfoWidgetClass)))
+                {
+                    Widget->SetInfo(GameInfo);
+                    AllGamesListVerticalBox->AddChild(Widget);
+                    AddedWidgetNumber++;
+                }
             }
         }
     }

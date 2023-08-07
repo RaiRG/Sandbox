@@ -41,7 +41,7 @@ void USDynamicListOfItemsWidget::ChangeOrder(TArray<TScriptInterface<ISStoredInO
         if (Index < Order.Num())
         {
             auto Item = Order[Index].GetInterface();
-            if (Item)
+            if (Item && OrderWidget)
             {
                 OrderWidget->SetIcon(Item->GetIcon());
                 Index++;
@@ -49,7 +49,10 @@ void USDynamicListOfItemsWidget::ChangeOrder(TArray<TScriptInterface<ISStoredInO
         }
         else
         {
-            OrderWidget->SetIcon(nullptr);
+            if (OrderWidget)
+            {
+                OrderWidget->SetIcon(nullptr);
+            }
         }
     }
 }

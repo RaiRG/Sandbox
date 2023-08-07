@@ -27,15 +27,17 @@ public:
     bool GetValidLocationOnNavMeshWasFound() { return bValidLocationOnNavMeshWasFound; }
     FVector GetFoundedValidLocationOnNavMesh() { return FoundedValidLocationOnNavMesh; }
 
-    virtual bool GetDoesHold() {return bDoesHold; };
-    virtual void Hold(AActor* ObjectForHolding)  override;
+    virtual bool GetDoesHold() { return bDoesHold; };
+    virtual void Hold(AActor* ObjectForHolding) override;
     virtual void ThrowOut() override;
-    
+
     void DisablePointer();
     void ActivatePointer();
     bool IsValidNavLocation(FVector& ProjectedLocationOnNavMesh, FVector HitLocation) const;
     void InputData() const;
     void InteractWithWorld();
+    void SetCanFindBestLocationOnNavMesh(bool bEnable) { bCanSearchBestLocationOnNavMesh = bEnable; }
+
 protected:
     virtual void BeginPlay() override;
     virtual void Tick(float DeltaTime) override;
@@ -83,6 +85,7 @@ private:
     //Pointer
     void UpdatePointerTrace();
     bool bIsPointerActive;
+    bool bCanSearchBestLocationOnNavMesh = false;
 
     // Location on NavMesh
     bool bValidLocationOnNavMeshWasFound = false;
@@ -90,7 +93,7 @@ private:
 
     //Holder:
     bool bDoesHold = false;
-    
+
     UPROPERTY()
     AActor* HoldedObject = nullptr;
 
